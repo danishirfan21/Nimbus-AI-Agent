@@ -2,12 +2,18 @@
 
 A lightning-fast AI agent built with Python, powered by Groq's Llama 3.1 models. This agent demonstrates the core concepts of "Function Calling" (Tools) where the AI can interact with the real world—in this case, checking the local system time.
 
+### 🌐 Live Demo
+[Check out the live agent here!](https://danish-time-agent.streamlit.app/)
+
+
 ## 🚀 Features
 
 - **Groq Powered**: Uses `llama-3.1-8b-instant` for near-instant responses.
 - **Function Calling**: Real-time integration with Python functions.
 - **Environment Driven**: Secure configuration using `.env` files.
+- **Interactive UI**: Built with Streamlit for a clean, chat-like experience.
 - **Agentic Loop**: The AI thinks, calls a tool, observes the result, and responds naturally.
+
 
 ## 🛠️ Setup
 
@@ -18,7 +24,8 @@ A lightning-fast AI agent built with Python, powered by Groq's Llama 3.1 models.
    ```
 3. **Install dependencies**:
    ```powershell
-   & ".venv/Scripts/python.exe" -m pip install openai python-dotenv
+   & ".venv/Scripts/python.exe" -m pip install -r requirements.txt
+
    ```
 4. **Configure API Key**:
    Create a `.env` file in the root directory and add your Groq API key:
@@ -28,18 +35,26 @@ A lightning-fast AI agent built with Python, powered by Groq's Llama 3.1 models.
 
 ## 📖 Usage
 
-Run the agent with the following command:
+Run the web app:
+```powershell
+& ".venv/Scripts/python.exe" -m streamlit run app.py
+```
 
+Or run the terminal-based agent:
 ```powershell
 & ".venv/Scripts/python.exe" agent.py
 ```
 
+
 ## 📂 Project Structure
 
-- `agent.py`: The main logic for the AI agent and tool definitions.
+- `app.py`: The Streamlit web application interface.
+- `agent.py`: The terminal-based agent logic.
+- `requirements.txt`: List of Python dependencies.
 - `.env`: (Ignored) Contains your sensitive API keys.
 - `.gitignore`: Ensures sensitive and junk files aren't tracked.
 - `.env.example`: A template for setting up your environment.
+
 
 ## 🧠 How it Works
 
