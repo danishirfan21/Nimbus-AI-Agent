@@ -1,0 +1,21 @@
+# Environment variables (Sensitive)
+.env
+
+# Python virtual environment
+.venv/
+venv/
+env/
+bin/
+include/
+lib/
+share/
+pyvenv.cfg
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# IDE files
+.vscode/
+.idea/
