@@ -23,7 +23,7 @@ def get_current_time(location=None):
             # but pytz handles many standard ones.
             tz = pytz.timezone(location)
             now = datetime.now(tz)
-            return f"{now.strftime('%I:%M %p')} ({location})"
+            return now.strftime('%I:%M %p')
         else:
             # Default to UTC or a specific local time
             now = datetime.now()
@@ -118,9 +118,7 @@ if prompt := st.chat_input("Ask me about time or weather... e.g. 'What time is i
                             state="running"
                         )
                         weather_info = get_weather(location)
-                        tool_results.append(
-                            f"The weather in {location} is {weather_info}."
-                        )
+                        tool_results.append(f"Weather: {weather_info}")
                 status.update(
                     label="✔ Response ready",
                     state="complete",
