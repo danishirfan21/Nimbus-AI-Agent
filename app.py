@@ -102,17 +102,30 @@ if prompt := st.chat_input("Ask me about time or weather... e.g. 'What time is i
                 for tool_call in response_message.tool_calls:
                     args = json.loads(tool_call.function.arguments)
                     location = args.get("location")
-                    
+
                     if tool_call.function.name == "get_current_time":
-                        st.write(f"🕒 Checking the system clock for {location or 'Local'}...")
+                        status.update(
+                            label=f"🕒 Checking system clock for {location or 'local'}...",
+                            state="running"
+                        )
                         time_now = get_current_time(location)
-                        tool_results.append(f"The current time in {location or 'your area'} is {time_now}.")
+                        tool_results.append(
+                            f"The current time in {location or 'your area'} is {time_now}."
+                        )
                     elif tool_call.function.name == "get_weather":
-                        st.write(f"🌦️ Checking the weather forecast for {location}...")
+                        status.update(
+                            label=f"🌤 Fetching weather data for {location}...",
+                            state="running"
+                        )
                         weather_info = get_weather(location)
-                        tool_results.append(f"In {location}, the weather is: {weather_info}.")
-                
-                status.update(label="Information retrieved!", state="complete", expanded=False)
+                        tool_results.append(
+                            f"The weather in {location} is {weather_info}."
+                        )
+                status.update(
+                    label="✔ Response ready",
+                    state="complete",
+                    expanded=False
+                )
                 final_answer = "\n\n".join(tool_results)
             else:
                 status.update(label="Thinking complete", state="complete", expanded=False)
