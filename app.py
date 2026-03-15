@@ -48,9 +48,12 @@ def get_weather(location):
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
+# Filter out messages that don't have 'content' (like tool calls) for display,
+# though we should really handle them properly in the UI.
 for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
+    if message.get("content"):
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
 
 if prompt := st.chat_input("Ask me about time or weather... e.g. 'What time is it in London and what's the weather in Tokyo?'"):
     st.chat_message("user").markdown(prompt)
@@ -58,47 +61,51 @@ if prompt := st.chat_input("Ask me about time or weather... e.g. 'What time is i
 
     with st.chat_message("assistant"):
         with st.status("Agent is thinking...", expanded=True) as status:
+            tools = [{
+                "type": "function",
+                "function": {
+                    "name": "get_current_time",
+                    "description": "Get the current time for a specific location.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "location": {
+                                "type": "string",
+                                "description": "The location or timezone (e.g., 'America/New_York', 'Europe/London', 'Asia/Karachi')."
+                            }
+                        }
+                    }
+                }
+            }, {
+                "type": "function",
+                "function": {
+                    "name": "get_weather",
+                    "description": "Get the current weather for a specific location.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "location": {
+                                "type": "string",
+                                "description": "The city and country (e.g., 'London, UK', 'Karachi, Pakistan')."
+                            }
+                        }
+                    }
+                }
+            }]
+
             response = client.chat.completions.create(
                 model="llama-3.1-8b-instant",
-                messages=[{"role": "user", "content": prompt}],
-                tools=[{
-                    "type": "function",
-                    "function": {
-                        "name": "get_current_time",
-                        "description": "Get the current time for a specific location.",
-                        "parameters": {
-                            "type": "object",
-                            "properties": {
-                                "location": {
-                                    "type": "string",
-                                    "description": "The location or timezone (e.g., 'America/New_York', 'Europe/London', 'Asia/Karachi')."
-                                }
-                            }
-                        }
-                    }
-                }, {
-                    "type": "function",
-                    "function": {
-                        "name": "get_weather",
-                        "description": "Get the current weather for a specific location.",
-                        "parameters": {
-                            "type": "object",
-                            "properties": {
-                                "location": {
-                                    "type": "string",
-                                    "description": "The city and country (e.g., 'London, UK', 'Karachi, Pakistan')."
-                                }
-                            }
-                        }
-                    }
-                }]
+                messages=st.session_state.messages,
+                tools=tools,
+                tool_choice="auto"
             )
             
             response_message = response.choices[0].message
             
             if response_message.tool_calls:
                 import json
-                tool_results = []
+                st.session_state.messages.append(response_message)
+
                 for tool_call in response_message.tool_calls:
                     args = json.loads(tool_call.function.arguments)
                     location = args.get("location")
@@ -109,22 +116,35 @@ if prompt := st.chat_input("Ask me about time or weather... e.g. 'What time is i
                             state="running"
                         )
                         time_now = get_current_time(location)
-                        tool_results.append(
-                            f"The current time in {location or 'your area'} is {time_now}."
-                        )
+                        st.session_state.messages.append({
+                            "tool_call_id": tool_call.id,
+                            "role": "tool",
+                            "name": "get_current_time",
+                            "content": f"The current time in {location or 'your area'} is {time_now}.",
+                        })
                     elif tool_call.function.name == "get_weather":
                         status.update(
                             label=f"🌤 Fetching weather data for {location}...",
                             state="running"
                         )
                         weather_info = get_weather(location)
-                        tool_results.append(f"Weather: {weather_info}")
+                        st.session_state.messages.append({
+                            "tool_call_id": tool_call.id,
+                            "role": "tool",
+                            "name": "get_weather",
+                            "content": weather_info,
+                        })
+
+                second_response = client.chat.completions.create(
+                    model="llama-3.1-8b-instant",
+                    messages=st.session_state.messages
+                )
+                final_answer = second_response.choices[0].message.content
                 status.update(
                     label="✔ Response ready",
                     state="complete",
                     expanded=False
                 )
-                final_answer = "\n\n".join(tool_results)
             else:
                 status.update(label="Thinking complete", state="complete", expanded=False)
                 final_answer = response_message.content

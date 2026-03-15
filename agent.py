@@ -1,14 +1,13 @@
 import os
 import pytz
 import requests
-from openai import OpenAI
+from groq import Groq
 from datetime import datetime
 from dotenv import load_dotenv
 
 load_dotenv()
 
-client = OpenAI(
-    base_url="https://api.groq.com/openai/v1",
+client = Groq(
     api_key=os.environ.get("GROQ_API_KEY")
 )
 
@@ -17,13 +16,13 @@ def get_current_time(location=None):
         if location:
             tz = pytz.timezone(location)
             now = datetime.now(tz)
-            return f"{now.strftime('%I:%M %p')} ({location})"
+            return f"The current time in {location} is {now.strftime('%I:%M %p')}."
         else:
             now = datetime.now()
-            return f"{now.strftime('%I:%M %p')} (Local Server Time)"
+            return f"The current time is {now.strftime('%I:%M %p')} (Local Server Time)."
     except Exception:
         now = datetime.now()
-        return f"{now.strftime('%I:%M %p')} (Local Server Time)"
+        return f"The current time is {now.strftime('%I:%M %p')} (Local Server Time)."
 
 def get_weather(location):
     try:
@@ -39,7 +38,7 @@ def get_weather(location):
 def run_agent(user_prompt):
     print(f"User: {user_prompt}")
     messages = [{"role": "user", "content": user_prompt}]
-    
+
     tools = [{
         "type": "function",
         "function": {
@@ -84,16 +83,16 @@ def run_agent(user_prompt):
 
     if tool_calls:
         messages.append(response_message)
-        
+
         for tool_call in tool_calls:
             if tool_call.function.name == "get_current_time":
                 import json
                 args = json.loads(tool_call.function.arguments)
                 location = args.get("location")
-                
+
                 time_info = get_current_time(location)
                 print(f"Agent: Checked the clock for {location or 'local'}... it's {time_info}.")
-                
+
                 messages.append({
                     "tool_call_id": tool_call.id,
                     "role": "tool",
@@ -104,21 +103,20 @@ def run_agent(user_prompt):
                 import json
                 args = json.loads(tool_call.function.arguments)
                 location = args.get("location")
-                
+
                 weather_info = get_weather(location)
                 print(f"Agent: Checked the weather for {location}... {weather_info}.")
-                
+
                 messages.append({
                     "tool_call_id": tool_call.id,
                     "role": "tool",
                     "name": "get_weather",
                     "content": weather_info,
                 })
-        
+
         second_response = client.chat.completions.create(
             model="llama-3.1-8b-instant",
-            messages=messages,
-            tools=tools
+            messages=messages
         )
         print(f"Agent: {second_response.choices[0].message.content}")
     else:
@@ -128,4 +126,4 @@ def run_agent(user_prompt):
 
 # 4. Test it
 if __name__ == "__main__":
-    run_agent("Hey, what time is it right now?")
+    run_agent("Hey, what time is it right now?")
