@@ -46,9 +46,15 @@ def get_current_time(location=None):
 def get_weather(location):
     try:
         print(f"📡 Geocoding location: {location}", flush=True)
-        # 1. Geocode location to lat/long
-        geo_url = f"https://geocoding-api.open-meteo.com/v1/search?name={location}&count=1&language=en&format=json"
-        geo_res = requests.get(geo_url, timeout=10)
+        # 1. Geocode location to lat/long using params for proper encoding
+        geo_url = "https://geocoding-api.open-meteo.com/v1/search"
+        geo_params = {
+            "name": location,
+            "count": 1,
+            "language": "en",
+            "format": "json"
+        }
+        geo_res = requests.get(geo_url, params=geo_params, timeout=10)
         geo_data = geo_res.json()
 
         if not geo_data.get("results"):
