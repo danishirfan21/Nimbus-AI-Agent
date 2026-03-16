@@ -187,14 +187,19 @@ if prompt := st.chat_input("Ask me about time or weather... e.g. 'What time is i
                         Rules:
                         - Use ONLY the exact data provided in the tool results. Do not add, infer, or interpret anything beyond it.
                         - Do not describe or characterize the weather (e.g. do not say "chilly", "warm", "pleasant", "mix of conditions", "great day"). Only state what was explicitly given.
-                        - Do not invent information.
+                        - Do not invent information. This includes weather conditions like "cloudy", "sunny", "rainy" — do NOT mention them unless the tool result string explicitly contains that word.
+                        - Do NOT mention the absence of data. If weather was not fetched for a location, say nothing about it — do not say "no weather available" or "weather information is unavailable".
+                        - Only report what was actually retrieved. Each location should only be described using the data that was fetched for it.
                         - Keep the answer concise (1–2 sentences).
                         - Combine multiple locations into one natural response.
+
+                        Weather fields to include: temperature and weather condition ONLY IF explicitly present in the tool result string.
+                        Weather fields to EXCLUDE: wind speed, humidity, pressure, visibility, UV index, or any other metric not listed above.
 
                         Formatting rules:
                         - Time must use 12-hour format with AM/PM (example: 10:29 PM).
                         - Temperature must use Celsius format like 27°C.
-                        - Report weather conditions and temperature exactly as returned by the tool, word for word.
+                        - If a weather condition word (e.g. "cloudy", "rain", "sunny") does not appear in the tool result, do NOT mention any condition at all.
                         """
                         },
                         { "role": "user", "content": f"Original question: {prompt}\n\nTool results:\n{raw_data}" }
