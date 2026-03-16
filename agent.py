@@ -110,7 +110,7 @@ def run_agent(user_prompt):
                     "properties": {
                         "location": {
                             "type": "string",
-                            "description": "The city and country (e.g., 'London, UK', 'Karachi, Pakistan')."
+                            "description": "The city name (e.g., 'London', 'Karachi', 'New York')."
                         }
                     }
                 }

@@ -58,8 +58,17 @@ def get_weather(location):
         geo_data = geo_res.json()
 
         if not geo_data.get("results"):
-            print(f"❌ Geocoding failed for: {location}", flush=True)
-            return f"Could not find coordinates for {location}."
+            # Fallback: Try the first word of the location if comma-separated
+            if "," in location:
+                print(f"🔄 Retrying with simple location name...", flush=True)
+                simple_location = location.split(",")[0].strip()
+                geo_params["name"] = simple_location
+                geo_res = requests.get(geo_url, params=geo_params, timeout=10)
+                geo_data = geo_res.json()
+            
+            if not geo_data.get("results"):
+                print(f"❌ Geocoding failed for: {location}", flush=True)
+                return f"Could not find coordinates for {location}."
 
         lat = geo_data["results"][0]["latitude"]
         lon = geo_data["results"][0]["longitude"]
@@ -147,7 +156,7 @@ if prompt := st.chat_input("Ask Nimbus about time or weather..."):
                             "properties": {
                                 "location": {
                                     "type": "string",
-                                    "description": "The city and country (e.g., 'London, UK', 'Karachi, Pakistan')."
+                                    "description": "The city name (e.g., 'London', 'Karachi', 'New York')."
                                 }
                             }
                         }
