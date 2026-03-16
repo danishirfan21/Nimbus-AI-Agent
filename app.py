@@ -45,13 +45,39 @@ def get_current_time(location=None):
 
 def get_weather(location):
     try:
-        url = f"https://wttr.in/{location}?format=3"
-        response = requests.get(url)
-        if response.status_code == 200:
-            return response.text.strip()
+        print(f"📡 Geocoding location: {location}", flush=True)
+        # 1. Geocode location to lat/long
+        geo_url = f"https://geocoding-api.open-meteo.com/v1/search?name={location}&count=1&language=en&format=json"
+        geo_res = requests.get(geo_url, timeout=10)
+        geo_data = geo_res.json()
+
+        if not geo_data.get("results"):
+            print(f"❌ Geocoding failed for: {location}", flush=True)
+            return f"Could not find coordinates for {location}."
+
+        lat = geo_data["results"][0]["latitude"]
+        lon = geo_data["results"][0]["longitude"]
+        city_name = geo_data["results"][0]["name"]
+        
+        print(f"📍 Found {city_name} at {lat}, {lon}. Fetching weather...", flush=True)
+
+        # 2. Get weather for these coordinates
+        weather_url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current_weather=true"
+        weather_res = requests.get(weather_url, timeout=10)
+        weather_data = weather_res.json()
+
+        if "current_weather" in weather_data:
+            current = weather_data["current_weather"]
+            temp = current["temperature"]
+            wind = current["windspeed"]
+            # Open-Meteo uses numeric codes for weather; brief summary:
+            return f"Weather in {city_name}: {temp}°C, Wind speed: {wind} km/h"
         else:
-            return "Could not retrieve weather."
-    except Exception:
+            return "Could not retrieve current weather data."
+
+    except Exception as e:
+        print(f"💥 Weather function crashed: {str(e)}", flush=True)
+        logger.error(f"Weather function exception: {e}")
         return "Weather service currently unavailable."
 
 # --- 3. THE UI LOGIC ---
