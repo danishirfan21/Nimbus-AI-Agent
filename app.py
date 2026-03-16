@@ -19,9 +19,9 @@ logger.info("🚀 App Refresh: Script starting...")
 
 
 # --- 1. SETUP ---
-st.set_page_config(page_title="AI Agent", page_icon="🤖")
-st.title("🤖 AI Agent")
-st.caption("Powered by Groq & Llama 3.1")
+st.set_page_config(page_title="Nimbus", page_icon="☁️")
+st.title("☁️ Nimbus")
+st.caption("Your Personal Weather & Time Assistant | Powered by Groq")
 
 client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
@@ -69,9 +69,24 @@ def get_weather(location):
         if "current_weather" in weather_data:
             current = weather_data["current_weather"]
             temp = current["temperature"]
-            wind = current["windspeed"]
-            # Open-Meteo uses numeric codes for weather; brief summary:
-            return f"Weather in {city_name}: {temp}°C, Wind speed: {wind} km/h"
+            code = current["weathercode"]
+            
+            # Simple mapping for WMO weather codes
+            # Reference: https://open-meteo.com/en/docs
+            conditions = {
+                0: "clear skies",
+                1: "mainly clear", 2: "partly cloudy", 3: "overcast",
+                45: "foggy", 48: "depositing rime fog",
+                51: "light drizzle", 53: "moderate drizzle", 55: "dense drizzle",
+                61: "slight rain", 63: "moderate rain", 65: "heavy rain",
+                71: "slight snow", 73: "moderate snow", 75: "heavy snow",
+                77: "snow grains",
+                80: "slight rain showers", 81: "moderate rain showers", 82: "violent rain showers",
+                95: "thunderstorm",
+            }
+            condition = conditions.get(code, "current conditions")
+            
+            return f"Weather in {city_name}: {temp}°C, {condition}"
         else:
             return "Could not retrieve current weather data."
 
@@ -88,16 +103,16 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-if prompt := st.chat_input("Ask me about time or weather... e.g. 'What time is it in London and what's the weather in Tokyo?'"):
+if prompt := st.chat_input("Ask Nimbus about time or weather..."):
     st.chat_message("user").markdown(prompt)
     st.session_state.messages.append({"role": "user", "content": prompt})
 
     print(f"📝 User Prompt: {prompt}", flush=True)
     logger.info(f"📝 User Prompt: {prompt}")
     with st.chat_message("assistant"):
-        with st.status("Agent is thinking...", expanded=True) as status:
-            print("🤖 Calling LLM for tool detection...", flush=True)
-            logger.info("🤖 Calling LLM for tool detection...")
+        with st.status("Nimbus is calculating...", expanded=True) as status:
+            print("☁️ Nimbus is calling LLM...", flush=True)
+            logger.info("☁️ Nimbus is calling LLM...")
             response = client.chat.completions.create(
                 model="llama-3.1-8b-instant",
                 messages=[{"role": "user", "content": prompt}],
