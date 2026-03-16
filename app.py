@@ -8,6 +8,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+print("🚀 App Refresh: Script starting...")
+
+
 # --- 1. SETUP ---
 st.set_page_config(page_title="AI Agent", page_icon="🤖")
 st.title("🤖 AI Agent")
@@ -56,8 +59,10 @@ if prompt := st.chat_input("Ask me about time or weather... e.g. 'What time is i
     st.chat_message("user").markdown(prompt)
     st.session_state.messages.append({"role": "user", "content": prompt})
 
+    print(f"📝 User Prompt: {prompt}")
     with st.chat_message("assistant"):
         with st.status("Agent is thinking...", expanded=True) as status:
+            print("🤖 Calling LLM for tool detection...")
             response = client.chat.completions.create(
                 model="llama-3.1-8b-instant",
                 messages=[{"role": "user", "content": prompt}],
@@ -102,6 +107,9 @@ if prompt := st.chat_input("Ask me about time or weather... e.g. 'What time is i
                 for tool_call in response_message.tool_calls:
                     args = json.loads(tool_call.function.arguments)
                     location = args.get("location")
+                    print(f"🛠️ Executing tool: {tool_call.function.name} for {location}")
+                    st.write(f"🔍 DEBUG: Calling `{tool_call.function.name}` for `{location}`")
+
 
                     if tool_call.function.name == "get_current_time":
                         status.update(
@@ -109,6 +117,8 @@ if prompt := st.chat_input("Ask me about time or weather... e.g. 'What time is i
                             state="running"
                         )
                         time_now = get_current_time(location)
+                        print(f"🕒 Tool Result (Time): {time_now}")
+                        st.write(f"🕒 Tool Result (Time): `{time_now}`")
                         tool_results.append(
                             f"The current time in {location or 'your area'} is {time_now}."
                         )
@@ -118,6 +128,8 @@ if prompt := st.chat_input("Ask me about time or weather... e.g. 'What time is i
                             state="running"
                         )
                         weather_info = get_weather(location)
+                        print(f"🌤 Tool Result (Weather): {weather_info}")
+                        st.write(f"🌤 Tool Result (Weather): `{weather_info}`")
                         tool_results.append(f"Weather: {weather_info}")
                 status.update(
                     label="Response ready",
@@ -149,6 +161,7 @@ if prompt := st.chat_input("Ask me about time or weather... e.g. 'What time is i
                     ]
                 )
                 final_answer = naturalise.choices[0].message.content
+                print(f"✅ Final Answer Generated: {final_answer}")
             else:
                 status.update(label="Thinking complete", state="complete", expanded=False)
                 final_answer = response_message.content
