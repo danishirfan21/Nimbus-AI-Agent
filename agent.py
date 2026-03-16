@@ -28,25 +28,18 @@ def get_current_time(location=None):
 def get_weather(location):
     """Nimbus weather tool using Open-Meteo"""
     try:
-        # 1. Geocode using params for proper encoding
+        # 1. Geocode
         geo_url = "https://geocoding-api.open-meteo.com/v1/search"
-        geo_params = {
-            "name": location,
-            "count": 1,
-            "language": "en",
-            "format": "json"
-        }
+        geo_params = {"name": location, "count": 1, "language": "en", "format": "json"}
         geo_res = requests.get(geo_url, params=geo_params, timeout=10)
         geo_data = geo_res.json()
 
         if not geo_data.get("results"):
-            # Fallback: Try the first word of the location if comma-separated
             if "," in location:
                 simple_location = location.split(",")[0].strip()
                 geo_params["name"] = simple_location
                 geo_res = requests.get(geo_url, params=geo_params, timeout=10)
                 geo_data = geo_res.json()
-            
             if not geo_data.get("results"):
                 return f"Could not find coordinates for {location}."
 
@@ -54,15 +47,24 @@ def get_weather(location):
         lon = geo_data["results"][0]["longitude"]
         city_name = geo_data["results"][0]["name"]
         
-        # 2. Extract Weather
-        weather_url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current_weather=true"
-        weather_res = requests.get(weather_url, timeout=10)
+        # 2. Extract Weather using modern 'current' parameter
+        weather_url = "https://api.open-meteo.com/v1/forecast"
+        weather_params = {
+            "latitude": lat,
+            "longitude": lon,
+            "current": "temperature_2m,weather_code",
+            "timezone": "auto"
+        }
+        weather_res = requests.get(weather_url, params=weather_params, timeout=10)
         weather_data = weather_res.json()
 
-        if "current_weather" in weather_data:
-            current = weather_data["current_weather"]
-            temp = current["temperature"]
-            code = current["weathercode"]
+        if weather_res.status_code != 200:
+            return f"Weather service error: {weather_data.get('reason', 'Unknown error')}"
+
+        if "current" in weather_data:
+            current = weather_data["current"]
+            temp = current["temperature_2m"]
+            code = current["weather_code"]
             
             conditions = {
                 0: "clear skies", 1: "mainly clear", 2: "partly cloudy", 3: "overcast",
@@ -73,7 +75,7 @@ def get_weather(location):
             condition = conditions.get(code, "current conditions")
             return f"Weather in {city_name}: {temp}°C, {condition}"
         else:
-            return "Could not retrieve weather data."
+            return "Could not retrieve current weather data."
     except Exception as e:
         return f"Weather service error: {str(e)}"
 
@@ -133,11 +135,13 @@ def run_agent(user_prompt):
             
             if name == "get_current_time":
                 result = get_current_time(location)
+                tool_results.append(result)
             else:
                 result = get_weather(location)
+                if "Weather in" in result:
+                    tool_results.append(result)
                 
             print(f"[Result] {result}")
-            tool_results.append(result)
         
         # 2. Naturalise response
         raw_data = "\n".join(tool_results)

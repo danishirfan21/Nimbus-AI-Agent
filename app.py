@@ -77,17 +77,28 @@ def get_weather(location):
         print(f"📍 Found {city_name} at {lat}, {lon}. Fetching weather...", flush=True)
 
         # 2. Get weather for these coordinates
-        weather_url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current_weather=true"
-        weather_res = requests.get(weather_url, timeout=10)
+        # Using the newer 'current' parameter and explicit timezone
+        weather_url = "https://api.open-meteo.com/v1/forecast"
+        weather_params = {
+            "latitude": lat,
+            "longitude": lon,
+            "current": "temperature_2m,weather_code",
+            "timezone": "auto"
+        }
+        weather_res = requests.get(weather_url, params=weather_params, timeout=10)
         weather_data = weather_res.json()
 
-        if "current_weather" in weather_data:
-            current = weather_data["current_weather"]
-            temp = current["temperature"]
-            code = current["weathercode"]
+        if weather_res.status_code != 200:
+            error_msg = weather_data.get("reason", "Unknown API error")
+            print(f"❌ Weather API Error: {error_msg}", flush=True)
+            return f"Weather API Error: {error_msg}"
+
+        if "current" in weather_data:
+            current = weather_data["current"]
+            temp = current["temperature_2m"]
+            code = current["weather_code"]
             
             # Simple mapping for WMO weather codes
-            # Reference: https://open-meteo.com/en/docs
             conditions = {
                 0: "clear skies",
                 1: "mainly clear", 2: "partly cloudy", 3: "overcast",
@@ -103,6 +114,7 @@ def get_weather(location):
             
             return f"Weather in {city_name}: {temp}°C, {condition}"
         else:
+            print(f"❌ Missing 'current' data in response: {weather_data}", flush=True)
             return "Could not retrieve current weather data."
 
     except Exception as e:
@@ -200,7 +212,10 @@ if prompt := st.chat_input("Ask Nimbus about time or weather..."):
                         logger.info(f"🌤 Tool Result (Weather): {weather_info}")
                         st.write(f"🌤 Tool Result (Weather): `{weather_info}`")
                         st.toast(f"Weather fetched: {weather_info}")
-                        tool_results.append(f"Weather: {weather_info}")
+                        
+                        # Only include in final prompt if it's successful data
+                        if "Weather in" in weather_info:
+                            tool_results.append(f"Weather: {weather_info}")
                 status.update(
                     label="Response ready",
                     state="complete",
@@ -215,13 +230,12 @@ if prompt := st.chat_input("Ask Nimbus about time or weather..."):
                         You convert tool results into a clear, natural response.
 
                         Rules:
-                        - Use ONLY the exact data provided in the tool results. Do not add, infer, or interpret anything beyond it.
-                        - Do not describe or characterize the weather (e.g. do not say "chilly", "warm", "pleasant", "mix of conditions", "great day"). Only state what was explicitly given.
-                        - Do not invent information. This includes weather conditions like "cloudy", "sunny", "rainy" — do NOT mention them unless the tool result string explicitly contains that word.
-                        - Do NOT mention the absence of data. If weather was not fetched for a location, say nothing about it — do not say "no weather available" or "weather information is unavailable".
-                        - Only report what was actually retrieved. Each location should only be described using the data that was fetched for it.
-                        - Keep the answer concise (1–2 sentences).
-                        - Combine multiple locations into one natural response.
+                        - Use ONLY the exact data provided in the tool results.
+                        - If tool results are empty or do not contain valid data for a location, do NOT mention that location at all.
+                        - Do NOT describe or characterize the weather (no "chilly", "warm", etc.).
+                        - Do NOT mention the absence of data. Never say "unavailable", "no information", or "could not fetch".
+                        - If no valid data was retrieved for any location, simply say you couldn't find the requested information.
+                        - Combine successful results into 1-2 concise sentences.
 
                         Weather fields to include: temperature and weather condition ONLY IF explicitly present in the tool result string.
                         Weather fields to EXCLUDE: wind speed, humidity, pressure, visibility, UV index, or any other metric not listed above.
