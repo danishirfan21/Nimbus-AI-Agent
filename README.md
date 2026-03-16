@@ -1,21 +1,22 @@
-# 🤖 Groq AI Assistant
+# ☁️ Nimbus
 
-A lightning-fast AI agent built with Python, powered by Groq's Llama 3.1 models. This agent demonstrates the core concepts of "Function Calling" (Tools) where the AI can interact with the real world—specifically checking current time and weather across the globe.
+A lightning-fast AI Agent built with Python, powered by Groq's Llama 3.1 models. **Nimbus** demonstrates the core concepts of "Function Calling" (Tools) where the AI can interact with the real world—specifically checking current time and weather across the globe.
 
 ### 🌐 Live Demo
-[Check out the live agent here!](https://danish-time-agent.streamlit.app/)
+[Check out Nimbus here!](https://danish-time-agent.streamlit.app/)
 
 
 ## 🚀 Features
 
 - **Groq Powered**: Uses `llama-3.1-8b-instant` for near-instant responses.
-- **Function Calling**: Real-time integration with Python functions to fetch data.
-- **Environment Driven**: Secure configuration using `.env` files.
-- **Interactive UI**: Built with Streamlit for a clean, chat-like experience.
-- **Global Timezone Support**: Powered by `pytz` to accurately check time anywhere.
-- **Weather Insights**: Dynamically fetches weather data using the `wttr.in` service.
-- **Agentic Loop**: The AI thinks, calls tools, observes results, and responds naturally.
-
+- **Advanced Function Calling**: Real-time integration with Python functions to fetch data.
+- **Nimbus Branding**: A personalized, sleek AI identity with custom status messaging.
+- **Professional Weather Logic**: Switched to a robust two-step process:
+    - **Geocoding**: Converts location names (e.g., "Paris") into precise coordinates.
+    - **Open-Meteo API**: Fetches reliable, live weather data for those coordinates.
+- **Enhanced Debugging**: Real-time logging both in the terminal (with `flush=True`) and directly in the Streamlit UI.
+- **Interactive UI**: Built with Streamlit featuring a "Nimbus is calculating..." status loop.
+- **CLI Mode**: Includes a terminal-based interface for fast, light-weight interaction.
 
 
 ## 🛠️ Setup
@@ -28,7 +29,6 @@ A lightning-fast AI agent built with Python, powered by Groq's Llama 3.1 models.
 3. **Install dependencies**:
    ```powershell
    & ".venv/Scripts/python.exe" -m pip install -r requirements.txt
-
    ```
 4. **Configure API Key**:
    Create a `.env` file in the root directory and add your Groq API key:
@@ -38,12 +38,14 @@ A lightning-fast AI agent built with Python, powered by Groq's Llama 3.1 models.
 
 ## 📖 Usage
 
-Run the web app:
+### Web Application (Recommended)
+Run the Streamlit app:
 ```powershell
 & ".venv/Scripts/python.exe" -m streamlit run app.py
 ```
 
-Or run the terminal-based agent:
+### Terminal Agent
+Run the interactive CLI agent:
 ```powershell
 & ".venv/Scripts/python.exe" agent.py
 ```
@@ -51,20 +53,18 @@ Or run the terminal-based agent:
 
 ## 📂 Project Structure
 
-- `app.py`: The Streamlit web application interface.
-- `agent.py`: The terminal-based agent logic.
+- `app.py`: The main Nimbus web application (Streamlit).
+- `agent.py`: The interactive CLI version of Nimbus.
 - `requirements.txt`: List of Python dependencies.
 - `.env`: (Ignored) Contains your sensitive API keys.
 - `.gitignore`: Ensures sensitive and junk files aren't tracked.
-- `.env.example`: A template for setting up your environment.
 
 
 ## 🧠 How it Works
 
 1. **User asks a question**: "What's the weather in London and what time is it there?"
-2. **AI Decides**: The model identifies the location and realizes it needs two tools.
-3. **Tool Execution**: 
-   - Calls `get_current_time` for the timezone.
-   - Calls `get_weather` to fetch atmospheric data.
-4. **Final Response**: The AI combines the data and responds: "It's 2:00 PM in London with light rain and a temperature of 15°C."
-
+2. **Nimbus Decides**: The AI identifies that it needs to call specific tools for location data.
+3. **Execution & Observation**: 
+   - **Time**: Calls `get_current_time` with the detected timezone.
+   - **Weather**: Calls `get_weather` which handles geocoding and the Open-Meteo API.
+4. **Natural Response**: Nimbus observes the raw data, applies conversational rules, and responds: "It's currently 06:45 PM in London with clear skies and a temperature of 18°C."

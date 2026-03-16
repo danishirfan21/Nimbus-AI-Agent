@@ -21,7 +21,7 @@ logger.info("🚀 App Refresh: Script starting...")
 # --- 1. SETUP ---
 st.set_page_config(page_title="Nimbus", page_icon="☁️")
 st.title("☁️ Nimbus")
-st.caption("Your Personal Weather & Time Assistant | Powered by Groq")
+st.caption("Your Personal Weather & Time Agent | Powered by Groq")
 
 client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 

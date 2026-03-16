@@ -1,6 +1,7 @@
 import os
 import pytz
 import requests
+import json
 from openai import OpenAI
 from datetime import datetime
 from dotenv import load_dotenv
@@ -26,18 +27,47 @@ def get_current_time(location=None):
         return f"{now.strftime('%I:%M %p')} (Local Server Time)"
 
 def get_weather(location):
+    """Nimbus weather tool using Open-Meteo"""
     try:
-        url = f"https://wttr.in/{location}?format=3"
-        response = requests.get(url)
-        if response.status_code == 200:
-            return response.text.strip()
+        # 1. Geocode
+        geo_url = f"https://geocoding-api.open-meteo.com/v1/search?name={location}&count=1&language=en&format=json"
+        geo_res = requests.get(geo_url, timeout=10)
+        geo_data = geo_res.json()
+
+        if not geo_data.get("results"):
+            return f"Could not find coordinates for {location}."
+
+        lat = geo_data["results"][0]["latitude"]
+        lon = geo_data["results"][0]["longitude"]
+        city_name = geo_data["results"][0]["name"]
+        
+        # 2. Extract Weather
+        weather_url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current_weather=true"
+        weather_res = requests.get(weather_url, timeout=10)
+        weather_data = weather_res.json()
+
+        if "current_weather" in weather_data:
+            current = weather_data["current_weather"]
+            temp = current["temperature"]
+            code = current["weathercode"]
+            
+            conditions = {
+                0: "clear skies", 1: "mainly clear", 2: "partly cloudy", 3: "overcast",
+                45: "foggy", 48: "rime fog", 51: "light drizzle", 53: "moderate drizzle",
+                55: "dense drizzle", 61: "slight rain", 63: "moderate rain", 65: "heavy rain",
+                71: "slight snow", 73: "moderate snow", 75: "heavy snow", 95: "thunderstorm",
+            }
+            condition = conditions.get(code, "current conditions")
+            return f"Weather in {city_name}: {temp}°C, {condition}"
         else:
-            return "Could not retrieve weather."
-    except Exception:
-        return "Weather service currently unavailable."
+            return "Could not retrieve weather data."
+    except Exception as e:
+        return f"Weather service error: {str(e)}"
 
 def run_agent(user_prompt):
     print(f"User: {user_prompt}")
+    print("☁️ Nimbus is thinking...")
+    
     messages = [{"role": "user", "content": user_prompt}]
     
     tools = [{
@@ -86,46 +116,37 @@ def run_agent(user_prompt):
         messages.append(response_message)
         
         for tool_call in tool_calls:
-            if tool_call.function.name == "get_current_time":
-                import json
-                args = json.loads(tool_call.function.arguments)
-                location = args.get("location")
+            name = tool_call.function.name
+            args = json.loads(tool_call.function.arguments)
+            location = args.get("location")
+            
+            print(f"🛠️ Nimbus executing: {name} for {location}...")
+            
+            if name == "get_current_time":
+                result = get_current_time(location)
+            else:
+                result = get_weather(location)
                 
-                time_info = get_current_time(location)
-                print(f"Agent: Checked the clock for {location or 'local'}... it's {time_info}.")
-                
-                messages.append({
-                    "tool_call_id": tool_call.id,
-                    "role": "tool",
-                    "name": "get_current_time",
-                    "content": time_info,
-                })
-            elif tool_call.function.name == "get_weather":
-                import json
-                args = json.loads(tool_call.function.arguments)
-                location = args.get("location")
-                
-                weather_info = get_weather(location)
-                print(f"Agent: Checked the weather for {location}... {weather_info}.")
-                
-                messages.append({
-                    "tool_call_id": tool_call.id,
-                    "role": "tool",
-                    "name": "get_weather",
-                    "content": weather_info,
-                })
+            print(f"📥 Result: {result}")
+            
+            messages.append({
+                "tool_call_id": tool_call.id,
+                "role": "tool",
+                "name": name,
+                "content": result,
+            })
         
         second_response = client.chat.completions.create(
             model="llama-3.1-8b-instant",
-            messages=messages,
-            tools=tools
+            messages=messages
         )
-        print(f"Agent: {second_response.choices[0].message.content}")
+        print(f"☁️ Nimbus: {second_response.choices[0].message.content}")
     else:
-        print(f"Agent: {response_message.content}")
+        print(f"☁️ Nimbus: {response_message.content}")
 
-
-
-# 4. Test it
 if __name__ == "__main__":
-    run_agent("Hey, what time is it right now?")
+    while True:
+        user_input = input("\nYou: ")
+        if user_input.lower() in ['exit', 'quit', 'bye']:
+            break
+        run_agent(user_input)
